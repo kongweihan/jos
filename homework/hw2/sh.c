@@ -61,22 +61,58 @@ runcmd(struct cmd *cmd)
             ecmd = (struct execcmd*)cmd;
             if(ecmd->argv[0] == 0)
                 _exit(0);
-            fprintf(stderr, "exec not implemented\n");
-            // Your code here ...
+
+            const char * paths[] = {
+                "",
+                "/bin/",
+                "/usr/bin/"
+            };
+
+            for (int i = 0; i < sizeof(paths) / sizeof(paths[0]); i++) {
+                char *prefix_cmd = malloc(strlen(ecmd->argv[0])) + strlen(paths[i]) + 1;
+                strcpy(prefix_cmd, paths[i]);
+                strcat(prefix_cmd, ecmd->argv[0]);
+                execv(prefix_cmd, ecmd->argv);
+            }
+            perror("exec error");
             break;
 
         case '>':
         case '<':
             rcmd = (struct redircmd*)cmd;
-            fprintf(stderr, "redir not implemented\n");
-            // Your code here ...
+            if (close(rcmd->fd) < 0) {
+                perror("close error");
+            }
+            if (open(rcmd->file, rcmd->flags, S_IRWXU) < 0) {
+                perror("open error");
+            }
             runcmd(rcmd->cmd);
             break;
 
         case '|':
             pcmd = (struct pipecmd*)cmd;
-            fprintf(stderr, "pipe not implemented\n");
-            // Your code here ...
+            int p[2];
+            if (pipe(p) < 0) {
+                perror("pipe creation error");
+            }
+            if (fork1() == 0) {
+                close(1);
+                dup(p[1]);
+                close(p[0]);
+                close(p[1]);
+                runcmd(pcmd->left);
+            }
+            if (fork1() == 0) {
+                close(0);
+                dup(p[0]);
+                close(p[0]);
+                close(p[1]);
+                runcmd(pcmd->right);
+            }
+            close(p[0]);
+            close(p[1]);
+            wait(NULL);
+            wait(NULL);
             break;
     }
     _exit(0);
