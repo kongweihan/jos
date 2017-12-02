@@ -24,6 +24,7 @@ struct Command {
 static struct Command commands[] = {
 	{ "help", "Display this list of commands", mon_help },
 	{ "kerninfo", "Display information about the kernel", mon_kerninfo },
+    { "backtrace", "Display stack backtrace", mon_backtrace},
 };
 
 /***** Implementations of basic kernel monitor commands *****/
@@ -55,9 +56,36 @@ mon_kerninfo(int argc, char **argv, struct Trapframe *tf)
 }
 
 int
-mon_backtrace(int argc, char **argv, struct Trapframe *tf)
-{
-	// Your code here.
+mon_backtrace(int argc, char **argv, struct Trapframe *tf) {
+
+    uint32_t *ebp;
+    if (argc == 0 || argc == 1) {
+        ebp = (uint32_t*) read_ebp();
+        cprintf("Stack backtrace:\n");
+    } else {
+        ebp = (uint32_t*) argv[0]; // We used 1st element for caller's ebp
+    }
+
+    if (!ebp) {
+        return 0;
+    }
+
+    uintptr_t eip = *(ebp + 1);
+    cprintf("  ebp %08x  eip %08x  args", ebp, eip);
+    for (int i = 0; i < 5; i++) {
+        cprintf(" %08x", *(ebp + 2 + i));
+    }
+    cprintf("\n");
+
+    struct Eipdebuginfo info;
+    debuginfo_eip(eip, &info);
+    cprintf("         %s:%d: %.*s+%d\n", info.eip_file, info.eip_line,
+            info.eip_fn_namelen, info.eip_fn_name, eip - info.eip_fn_addr);
+
+    // Here ebp can be seen as an array, the first element is ebp of the caller.
+    // Caller's ebp should be the 2nd arg, but for simplicity we make it the 1st
+    // element of argv
+    mon_backtrace(2, (char**) ebp, 0);
 	return 0;
 }
 
