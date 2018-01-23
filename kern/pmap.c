@@ -13,6 +13,7 @@
 // These variables are set by i386_detect_memory()
 size_t npages;			// Amount of physical memory (in pages)
 static size_t npages_basemem;	// Amount of base memory (in pages)
+size_t pages_size;		// Size of PageInfo array, round up to PGSIZE
 
 // These variables are set in mem_init()
 pde_t *kern_pgdir;		// Kernel's initial page directory
@@ -62,7 +63,7 @@ i386_detect_memory(void)
 // Set up memory mappings above UTOP.
 // --------------------------------------------------------------
 
-static void boot_map_region(pde_t *pgdir, uintptr_t va, size_t size, physaddr_t pa, int perm);
+void boot_map_region(pde_t *pgdir, uintptr_t va, size_t size, physaddr_t pa, int perm);
 static void check_page_free_list(bool only_low_memory);
 static void check_page_alloc(void);
 static void check_kern_pgdir(void);
@@ -158,7 +159,7 @@ mem_init(void)
 	// to initialize all fields of each struct PageInfo to 0.
 	// Your code goes here:
     pages = boot_alloc(sizeof(struct PageInfo) * npages);
-	size_t pages_size = ROUNDUP(sizeof(struct PageInfo) * npages, PGSIZE);
+	pages_size = ROUNDUP(sizeof(struct PageInfo) * npages, PGSIZE);
     memset(pages, 0, pages_size);
 
 
@@ -410,7 +411,7 @@ pgdir_walk(pde_t *pgdir, const void *va, int create)
 // mapped pages.
 //
 // Hint: the TA solution uses pgdir_walk
-static void
+void
 boot_map_region(pde_t *pgdir, uintptr_t va, size_t size, physaddr_t pa, int perm)
 {
 	for (int i = 0; i < size/PGSIZE; i++) {
