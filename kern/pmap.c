@@ -321,7 +321,8 @@ page_init(void)
     char *boot_alloc_end = boot_alloc(0);
 	for (i = 0; i < npages; i++) {
 		if (i == 0 ||
-			(i >= IOPHYSMEM/PGSIZE && i < PADDR(boot_alloc_end)/PGSIZE))
+			(i >= IOPHYSMEM/PGSIZE && i < PADDR(boot_alloc_end)/PGSIZE) ||
+			i == MPENTRY_PADDR/PGSIZE)
 		{
 			pages[i].pp_ref = 1;
 			pages[i].pp_link = NULL;
