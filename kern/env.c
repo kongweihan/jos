@@ -191,11 +191,11 @@ env_setup_vm(struct Env *e)
 	// LAB 3: Your code here.
 	p->pp_ref++;
 	e->env_pgdir = page2kva(p);
-	boot_map_region(e->env_pgdir, UPAGES, pages_size, PADDR(pages), PTE_U);
-	boot_map_region(e->env_pgdir, UENVS, PTSIZE, PADDR(envs), PTE_U);
-	boot_map_region(e->env_pgdir, KSTACKTOP - KSTKSIZE, KSTKSIZE,
-					PADDR(bootstack), PTE_W);
-	boot_map_region(e->env_pgdir, KERNBASE, 0xFFFFFFFF - KERNBASE + 1, 0, PTE_W);
+	// Copy kern_pgdir, not try to initialize again because it's easy to
+	// make mistake, and MMIO part is not easy to set up here
+	// Copy only the pgdir is good enough, because the PTs for VA above UTOP
+	// doesn't change, all env's mapping can share the same PTs
+	memmove(e->env_pgdir, kern_pgdir, PGSIZE);
 
 	// UVPT maps the env's own page table read-only.
 	// Permissions: kernel R, user R
@@ -573,6 +573,7 @@ env_run(struct Env *e)
 	curenv->env_runs++;
 	lcr3(PADDR(curenv->env_pgdir));
 
+	unlock_kernel();
 	env_pop_tf(&curenv->env_tf);
 
 	panic("env_run not yet implemented");
