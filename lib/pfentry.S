@@ -66,17 +66,45 @@ _pgfault_upcall:
 	//
 	// LAB 4: Your code here.
 
+	// Keep in mind that in a normal program execution, the bottom of the stack
+	// for a function call is the %eip that the function will return to
+	// Stack:
+	//   something
+	//   something
+	//   %EIP      ----> here and above is stack content for the parent function
+	//   something ----> here and above is stack content for the child function
+	//   something
+
+	// Wherever the trap-time stack is, push the %eip we'd like to return to on
+	// top of the stack
+    movl 0x30(%esp), %eax   // "utf_esp" points to the stack we'll return to
+    subl $0x4, %eax     // create one 4-byte space by subtracting 4 from it
+    movl %eax, 0x30(%esp)
+
+    // Put the %eip into that created 4-byte space, this will be used as %eip when
+    // this fianlly returns
+    movl 0x28(%esp), %ebx   // "utf_eip"
+    movl %ebx, (%eax)
+
 	// Restore the trap-time registers.  After you do this, you
 	// can no longer modify any general-purpose registers.
 	// LAB 4: Your code here.
+	// Skip "utf_fault_va" and "utf_err"
+	addl $0x8, %esp
+    popal   // and pop registers
 
 	// Restore eflags from the stack.  After you do this, you can
 	// no longer use arithmetic operations or anything else that
 	// modifies eflags.
 	// LAB 4: Your code here.
+	// skip trap_time_eip, or "utf_eip"
+    addl $0x4, %esp
+    popfl   // and pop flags, then %esp points to "utf_esp"
 
 	// Switch back to the adjusted trap-time stack.
 	// LAB 4: Your code here.
+	popl %esp
 
 	// Return to re-execute the instruction that faulted.
 	// LAB 4: Your code here.
+	ret
