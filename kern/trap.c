@@ -384,6 +384,38 @@ page_fault_handler(struct Trapframe *tf)
 
 	// LAB 4: Your code here.
 
+    if (curenv->env_pgfault_upcall) {
+		struct UTrapframe *utf;
+        // If page fault while in user page fault handler, the exception stack
+        // already exists, so put the tf 32-bit below the current stack bottom
+        if (tf->tf_esp >= UXSTACKTOP - PGSIZE && tf->tf_esp < UXSTACKTOP) {
+			utf = (struct UTrapframe*) (tf->tf_esp - 4 - sizeof(struct UTrapframe));
+        } else {
+			utf = (struct UTrapframe*) (UXSTACKTOP - sizeof(struct UTrapframe));
+        }
+
+		user_mem_assert(curenv, utf, sizeof(struct UTrapframe), PTE_U | PTE_W);
+
+        utf->utf_fault_va = fault_va;
+        utf->utf_err = tf->tf_err;
+        utf->utf_eflags = tf->tf_eflags;
+        utf->utf_eip = tf->tf_eip;
+        utf->utf_esp = tf->tf_esp;
+        utf->utf_regs.reg_edi = tf->tf_regs.reg_edi;
+        utf->utf_regs.reg_esi = tf->tf_regs.reg_esi;
+        utf->utf_regs.reg_ebp = tf->tf_regs.reg_ebp;
+        utf->utf_regs.reg_oesp = tf->tf_regs.reg_oesp;
+        utf->utf_regs.reg_ebx = tf->tf_regs.reg_ebx;
+        utf->utf_regs.reg_edx = tf->tf_regs.reg_edx;
+        utf->utf_regs.reg_ecx = tf->tf_regs.reg_ecx;
+        utf->utf_regs.reg_eax = tf->tf_regs.reg_eax;
+
+		// at trap(), if in user mode, tf = &curenv->env_tf;
+		tf->tf_esp = (uintptr_t) utf;
+		tf->tf_eip = (uintptr_t) curenv->env_pgfault_upcall;
+		env_run(curenv);
+    }
+
 	// Destroy the environment that caused the fault.
 	cprintf("[%08x] user fault va %08x ip %08x\n",
 		curenv->env_id, fault_va, tf->tf_eip);
