@@ -245,7 +245,7 @@ trap_dispatch(struct Trapframe *tf)
 		int ret = syscall(tf->tf_regs.reg_eax, tf->tf_regs.reg_edx, tf->tf_regs.reg_ecx,
 		tf->tf_regs.reg_ebx, tf->tf_regs.reg_edi, tf->tf_regs.reg_esi);
 		if (ret < 0) {
-			panic("syscall: %e", ret);
+			panic("syscall: %d : %e %08x", tf->tf_regs.reg_eax, ret, curenv->env_id);
 		}
 		tf->tf_regs.reg_eax = ret;
 		return;

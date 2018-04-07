@@ -170,9 +170,7 @@ sys_env_set_pgfault_upcall(envid_t envid, void *func)
     }
 
     // check func is in user space
-    if ((uintptr_t)func >= UTOP) {
-        return -E_INVAL;
-    }
+    user_mem_assert(env, func, 1, PTE_U);
 
     env->env_pgfault_upcall = func;
     return 0;
