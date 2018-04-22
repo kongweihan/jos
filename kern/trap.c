@@ -242,12 +242,13 @@ trap_dispatch(struct Trapframe *tf)
         monitor(tf);
     }
 	if (tf->tf_trapno == T_SYSCALL) {
-		int ret = syscall(tf->tf_regs.reg_eax, tf->tf_regs.reg_edx, tf->tf_regs.reg_ecx,
-		tf->tf_regs.reg_ebx, tf->tf_regs.reg_edi, tf->tf_regs.reg_esi);
-		if (ret < 0) {
-			panic("syscall: %d : %e %08x", tf->tf_regs.reg_eax, ret, curenv->env_id);
-		}
-		tf->tf_regs.reg_eax = ret;
+        uint32_t syscallno = tf->tf_regs.reg_eax;
+        uint32_t a1 = tf->tf_regs.reg_edx;
+        uint32_t a2 = tf->tf_regs.reg_ecx;
+        uint32_t a3 = tf->tf_regs.reg_ebx;
+		uint32_t a4 = tf->tf_regs.reg_edi;
+        uint32_t a5 = tf->tf_regs.reg_esi;
+        tf->tf_regs.reg_eax = syscall(syscallno, a1, a2, a3, a4, a5);
 		return;
 	}
 
