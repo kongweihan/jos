@@ -14,6 +14,7 @@ extern char bootstacktop[], bootstack[];
 
 extern struct PageInfo *pages;
 extern size_t npages;
+extern size_t pages_size;
 
 extern pde_t *kern_pgdir;
 
@@ -52,7 +53,8 @@ enum {
 };
 
 void	mem_init(void);
-
+void boot_map_region(pde_t *pgdir, uintptr_t va, size_t size, physaddr_t pa,
+					  int perm);
 void	page_init(void);
 struct PageInfo *page_alloc(int alloc_flags);
 void	page_free(struct PageInfo *pp);
