@@ -302,6 +302,20 @@ static int
 copy_shared_pages(envid_t child)
 {
 	// LAB 5: Your code here.
+	uint8_t *va;
+	for (va = (uint8_t *) UTEXT; (uintptr_t)va < USTACKTOP; va += PGSIZE) {
+		pde_t pde = uvpd[PDX(va)];
+		if (pde & PTE_P) {
+			pte_t pte = uvpt[PGNUM(va)];
+			if ((pde & PTE_P) && (pte & PTE_P) &&
+				(pte & PTE_U) && (pte & PTE_SHARE)) {
+				int r;
+				if ((r = sys_page_map(0, va, child, va, pte & PTE_SYSCALL)) < 0)
+					panic("duppage: sys_page_map return %e", r);
+			}
+		}
+	}
+
 	return 0;
 }
 

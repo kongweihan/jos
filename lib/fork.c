@@ -76,7 +76,10 @@ duppage(envid_t envid, unsigned pn) {
 	// LAB 4: Your code here.
 	pte_t pte = uvpt[pn];
 	void *va = (void*)(pn * PGSIZE);
-	if (pte & PTE_COW || pte & PTE_W) {
+	if (pte & PTE_SHARE) {
+		if ((r = sys_page_map(0, va, envid, va, pte & PTE_SYSCALL)) < 0)
+			panic("duppage: sys_page_map return %e", r);
+	} else if (pte & PTE_COW || pte & PTE_W) {
 		if ((r = sys_page_map(0, va, envid, va, PTE_COW | PTE_U | PTE_P)) < 0) {
 			panic("duppage: sys_page_unmap return %e", r);
 		}
