@@ -81,12 +81,15 @@ duppage(envid_t envid, unsigned pn) {
 			panic("duppage: sys_page_map return %e", r);
 	} else if (pte & PTE_COW || pte & PTE_W) {
 		if ((r = sys_page_map(0, va, envid, va, PTE_COW | PTE_U | PTE_P)) < 0) {
-			panic("duppage: sys_page_unmap return %e", r);
+			panic("duppage: sys_page_map return %e", r);
 		}
         if ((r = sys_page_map(0, va, 0, va, PTE_COW | PTE_U | PTE_P)) < 0) {
-            panic("duppage: sys_page_unmap return %e", r);
+            panic("duppage: sys_page_map return %e", r);
         }
-	}
+	} else {
+        if ((r = sys_page_map(0, va, envid, va, pte & PTE_SYSCALL)) < 0)
+            panic("duppage: sys_page_map return %e", r);
+    }
 	return 0;
 }
 
