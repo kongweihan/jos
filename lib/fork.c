@@ -74,17 +74,13 @@ duppage(envid_t envid, unsigned pn) {
 	int r;
 
 	// LAB 4: Your code here.
-	pte_t pte = *((pte_t *) (UVPT + 4 * pn));
-	if (!(pte & PTE_P)) {
-		return 0;
-	}
+	pte_t pte = uvpt[pn];
+	void *va = (void*)(pn * PGSIZE);
 	if (pte & PTE_COW || pte & PTE_W) {
-		if ((r = sys_page_map(thisenv->env_id, (void*)(pn * PGSIZE), envid, (void*)(pn * PGSIZE),
-							  PTE_COW | PTE_U | PTE_P)) < 0) {
+		if ((r = sys_page_map(0, va, envid, va, PTE_COW | PTE_U | PTE_P)) < 0) {
 			panic("duppage: sys_page_unmap return %e", r);
 		}
-        if ((r = sys_page_map(thisenv->env_id, (void*)(pn * PGSIZE), thisenv->env_id, (void*)(pn * PGSIZE),
-                              PTE_COW | PTE_U | PTE_P)) < 0) {
+        if ((r = sys_page_map(0, va, 0, va, PTE_COW | PTE_U | PTE_P)) < 0) {
             panic("duppage: sys_page_unmap return %e", r);
         }
 	}
@@ -126,7 +122,7 @@ fork(void)
 
 	for (va = (uint8_t *) UTEXT; (uintptr_t)va < USTACKTOP; va += PGSIZE) {
         if ((uvpd[PDX(va)] & PTE_P) && (uvpt[PGNUM(va)] & PTE_P) &&
-            (uvpt[PGNUM(va)] & PTE_U) && (uvpt[PGNUM(va)] & (PTE_W | PTE_COW))) {
+            (uvpt[PGNUM(va)] & PTE_U)) {
             duppage(envid, PGNUM(va));
         }
 	}
